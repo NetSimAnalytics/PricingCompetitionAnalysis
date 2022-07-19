@@ -22,14 +22,14 @@ plot(data$RMSE, data$Average.Profit)
 lm0 = lm(data=data[data$test_data!=test_batch,], Average.Profit ~
            ifelse(RMSE<500.3,500.3,ifelse(RMSE>504.3,504.3,RMSE))
          +ifelse(RMSE>500.3,500.3,RMSE)
-         *ifelse(Market.Share>.75,.75,Market.Share)
-         +ifelse(Market.Share<.75,.75,ifelse(Market.Share>0.96,0.96,Market.Share))
+         *ifelse(Market.Share>.70,.70,Market.Share)
+         +ifelse(Market.Share<.70,.70,Market.Share)
 )
 lm1 = lm(data=data[data$test_data!=test_batch,], Average.Profit ~
            ifelse(RMSE<500.3,500.3,ifelse(RMSE>504.3,504.3,RMSE))
          +ifelse(RMSE>500.3,500.3,RMSE)
-         *ifelse(Market.Share>.75,.75,Market.Share)
-         +ifelse(Market.Share<.75,.75,ifelse(Market.Share>0.96,0.96,Market.Share))
+         *ifelse(Market.Share>.70,.70,Market.Share)
+         +ifelse(Market.Share<.70,.70,Market.Share)
 )
 
 AIC(lm0, lm1)
