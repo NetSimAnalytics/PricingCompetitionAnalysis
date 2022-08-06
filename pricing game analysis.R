@@ -27,7 +27,7 @@ lm0 = lm(data=data[data$test_data!=test_batch,], Average.Profit ~
 )
 lm1 = lm(data=data[data$test_data!=test_batch,], Average.Profit ~
            ifelse(RMSE<500.3,500.3,ifelse(RMSE>504.3,504.3,RMSE))
-         +ifelse(RMSE>500.3,500.3,RMSE)
+         +I(ifelse(RMSE>500.3,500.3,RMSE)^2)
          *ifelse(Market.Share>.70,.70,Market.Share)
          +ifelse(Market.Share<.70,.70,Market.Share)
 )
@@ -37,7 +37,7 @@ summary(lm0)
 summary(lm1)
 
 #predict for out of sample lm
-data$predicted_values_lm <- predict(lm0, data, type = 'response')
+data$predicted_values_lm <- predict(lm1, data, type = 'response')
 
 #glm
 profit_shift <- 200000
@@ -74,7 +74,7 @@ data$predicted_values_glm <- profit_shift-predict(glm0, data, type = 'response')
 
 #xgboost
 #prepare data
-Data_matrix<-sparse.model.matrix(Average.Profit ~ RMSE+test_data+Average.Profit, data = data)
+Data_matrix<-sparse.model.matrix(Average.Profit ~ RMSE+test_data+Market.Share, data = data)
 xgb.data.train <- xgb.DMatrix(data = Data_matrix[!(Data_matrix[,"test_data"] %in% c(test_batch,validation_batch)),],
                               label = data[!(data$test_data %in% c(test_batch,validation_batch)),]$Average.Profit)
 
@@ -103,3 +103,28 @@ data$prediction_xgboost <- predict(xgb, Data_matrix, reshape=T)
 
 write.csv(data, file = 'predictions.csv')
 
+
+#visualise outputs
+{
+  smooth_data_RMSE <- data.frame(RMSE=rep(499.4,100))
+  smooth_data_RMSE$Market.Share <- (1:100)/100
+  smooth_data_RMSE$Average.Profit <- 0
+  smooth_data_RMSE$test_data <- 0
+  Data_matrix2<-sparse.model.matrix(Average.Profit ~ RMSE+test_data+Market.Share, data = smooth_data_RMSE)
+  smooth_data_RMSE$prediction_xgboost <- predict(xgb, Data_matrix2, reshape=T)
+  smooth_data_RMSE$predicted_values_lm <- predict(lm1, smooth_data_RMSE, type = 'response')
+  plot(y=smooth_data_RMSE$predicted_values_lm, x= smooth_data_RMSE$Market.Share, type="l")
+  #lines(y=smooth_data_RMSE$prediction_xgboost, x= smooth_data_RMSE$Market.Share, type="l")
+}
+
+{
+  smooth_data_Market_Share <- data.frame(Market.Share=rep(.2,100))
+  smooth_data_Market_Share$RMSE <- 499.4+(1:100)/25
+  smooth_data_Market_Share$Average.Profit <- 0
+  smooth_data_Market_Share$test_data <- 0
+  Data_matrix2<-sparse.model.matrix(Average.Profit ~ RMSE+test_data+Market.Share, data = smooth_data_Market_Share)
+  smooth_data_Market_Share$prediction_xgboost <- predict(xgb, Data_matrix2, reshape=T)
+  smooth_data_Market_Share$predicted_values_lm <- predict(lm1, smooth_data_Market_Share, type = 'response')
+  #plot(y=smooth_data_Market_Share$prediction_xgboost, x= smooth_data_Market_Share$RMSE, type="l")
+  lines(y=smooth_data_Market_Share$prediction_xgboost, x= smooth_data_Market_Share$RMSE, type="l")
+}
